@@ -20,4 +20,13 @@
 
 ## ディレクトリ構成
 
-PlantVision Llama Tuner/ ├─ configs/ # 設定ファイル（ハイパーパラメータ、学習設定、評価設定など） ├─ data/ # PlantDoc-Datasetや前処理済みデータを格納 ├─ env/ # Python仮想環境用ディレクトリ (venv) ├─ notebooks/ # Jupyter Notebook形式での実験・可視化・デバッグ用 ├─ outputs/ # 学習済みモデル、チェックポイント、ログ、評価結果、図表などを格納 ├─ src/ # ソースコード（トレーニングスクリプト、データ前処理スクリプト、推論用コードなど） ├─ requirements.txt # 必要なライブラリ定義 ├─ README.md # 本ファイル └─ .gitignore
+PlantVision Llama Tuner/
+├── configs/          # 設定ファイル（ハイパーパラメータ、学習設定、評価設定など）
+├── data/             # PlantDoc-Datasetや前処理済みデータを格納
+├── env/              # Python仮想環境用ディレクトリ (venv)
+├── notebooks/        # Jupyter Notebook形式での実験・可視化・デバッグ用
+├── outputs/          # 学習済みモデル、チェックポイント、ログ、評価結果、図表などを格納
+├── src/              # ソースコード（トレーニングスクリプト、データ前処理スクリプト、推論用コードなど）
+├── requirements.txt  # 必要なライブラリ定義
+├── README.md         # 本ファイル
+└── .gitignore        # Gitで無視するファイルやフォルダを定義
