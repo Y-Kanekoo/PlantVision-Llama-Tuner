@@ -16,6 +16,7 @@ from tqdm import tqdm
 from data_preprocessing import PlantDocDataset
 import time
 from dotenv import load_dotenv
+from transformers import AutoModelForCausalLM, AutoTokenizer, MllamaForConditionalGeneration, AutoProcessor
 
 # 環境変数の読み込み
 load_dotenv()
@@ -69,20 +70,36 @@ class PlantVisionTrainer:
         logger.info("モデルをセットアップしています...")
 
         try:
-            # Vision-Instructモデル用の設定
-            model_kwargs = {
-                "use_flash_attention": True,
-                "device_map": "auto",
-                "token": os.getenv("HUGGINGFACE_TOKEN")
-            }
+            # 必要なクラスのインポート
+            from transformers import MllamaForConditionalGeneration, AutoProcessor
 
-            # FastLlamaModelにtorch_dtypeを渡さない
-            model, tokenizer = FastLlamaModel.from_pretrained(
+            # メモリ設定
+            if torch.cuda.is_available():
+                total_memory = torch.cuda.get_device_properties(
+                    0).total_memory / 1024**3
+                logger.info(f"Total GPU memory: {total_memory:.2f} GB")
+                max_memory = {0: f"{int(total_memory * 0.8)}GB"}
+
+            # まずプロセッサーを読み込む
+            processor = AutoProcessor.from_pretrained(
                 self.config["model"]["name"],
-                use_flash_attention=True,
-                device_map="auto",
-                token=os.getenv("HUGGINGFACE_TOKEN")
+                token=os.getenv("HUGGINGFACE_TOKEN"),
+                trust_remote_code=True
             )
+
+            # Vision-Instructモデルの読み込み
+            logger.info("Vision-Instructモデルを読み込んでいます...")
+            model = MllamaForConditionalGeneration.from_pretrained(
+                self.config["model"]["name"],
+                token=os.getenv("HUGGINGFACE_TOKEN"),
+                device_map="auto",
+                torch_dtype=torch.bfloat16,  # モデルの設定に合わせる
+                trust_remote_code=True,
+                max_memory=max_memory
+            )
+
+            # モデル設定の確認
+            logger.info(f"Model config: {model.config}")
 
             # LoRAの設定
             lora_config = LoraConfig(
@@ -95,27 +112,15 @@ class PlantVisionTrainer:
             )
 
             # モデルをLoRA用に準備
+            logger.info("LoRAの設定を適用しています...")
             model = model.prepare_for_training(lora_config)
 
-            # max_position_embeddingsの確認
-            model_config = model.config
-
-            model_max_seq_length = getattr(
-                model_config, "max_position_embeddings", None)
-            if model_max_seq_length is None and hasattr(model_config, "text_config"):
-                model_max_seq_length = getattr(
-                    model_config.text_config, "max_position_embeddings", None)
-
-            if model_max_seq_length is None:
-                raise ValueError(
-                    "Model configuration does not contain 'max_position_embeddings'")
-            logger.info(f"Max position embeddings: {model_max_seq_length}")
+            return model, processor  # tokenizerの代わりにprocessorを返す
 
         except Exception as e:
             logger.error(f"モデルのロードに失敗: {str(e)}")
+            logger.error("詳細なエラー情報: ", exc_info=True)
             raise
-
-        return model, tokenizer
 
     def setup_optimizers(self, model, num_training_steps: int):
         """オプティマイザとスケジューラのセットアップ"""
@@ -257,9 +262,9 @@ class PlantVisionTrainer:
         )
 
         # モデルのセットアップ
-        model, tokenizer = self.setup_model()
+        model, processor = self.setup_model()
 
-        # 総ステップ数の計算
+        # 総ステップの計算
         num_training_steps = len(train_loader) * \
             self.config["training"]["epochs"]
 

@@ -29,31 +29,28 @@ python -m venv venv
 
 python -m pip install --upgrade pip
 # 3. PyTorchのインストール（CUDA 12.1用）
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # 4. xformersのインストール
-pip install torch==2.4.0+cu121 torchvision==0.19.0+cu121 torchaudio==2.4.0+cu121 --index-urlhttps://download.pytorch.org/whl/cu121 
+pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121 -f https://download.pytorch.org/whl/cu121/torch_stable.html
+
+pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
+https://github.com/facebookresearch/xformers?tab=readme-ov-file
 
 # 5. 残りの依存パッケージのインストール
 pip install -r requirements.txt
 
+pip install "unsloth[cu121-ampere-torch211] @ git+https://github.com/unslothai/unsloth.git"
 ## データセットの準備
 
 ### PlantDocデータセットのダウンロードと前処理
 
-1. データセットのダウンロード
-```bash
-python data_preprocessing.py --download
-```
+# 1. データの前処理（修正後）
+python data_preprocessing.py --download --preprocess
 
-2. データの前処理
-```bash
-python data_preprocessing.py --preprocess
-```
+# 2. トレーニングの実行
+python train.py --config config.json --use_wandb
 
 ## モデルのファインチューニング
-
-### unslothの設定
 
 ```python
 from unsloth import FastLlamaModel
@@ -90,11 +87,45 @@ python inference.py --image_path path/to/image.jpg
 
 - [Llama 2](https://ai.meta.com/llama/)
 - [PlantDoc Dataset](https://github.com/pratikkayal/PlantDoc-Dataset)
-- [unsloth](https://github.com/unsloth/unsloth)
+- [unsloth](https://github.com/unslothai/unsloth)
 
 ## ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。 
+
+
+確認事項:
+Windowsではtritonの直接インストールはサポートされていません
+代替手段としてtriton-pre-mlirを使用する必要があります
+質問:
+1. Visual Studio Build Toolsはインストールされていますか？
+2. CMakeはインストールされていますか？
+解決手順:
+必要なツールのインストール
+# CMakeのインストール（もし未インストールの場合）
+winget install Kitware.CMake
+
+triton-pre-mlirのインストール
+https://huggingface.co/madbuda/triton-windows-builds
+ローカルに保存した後に
+(venv) PS C:\Users\Administrator\PlantVision Llama Tuner> start https://huggingface.co/madbuda/triton-windows-builds
+(venv) PS C:\Users\Administrator\PlantVision Llama Tuner> pip install "C:\Users\Administrator\Downloads\triton-3.0.0-cp310-cp310-win_amd64.whl"
+Processing c:\users\administrator\downloads\triton-3.0.0-cp310-cp310-win_amd64.whl
+Requirement already satisfied: filelock in c:\users\administrator\plantvision llama tuner\venv\lib\site-packages (from triton==3.0.0) (3.13.1)
+Installing collected packages: triton
+Successfully installed triton-3.0.0
+(venv) PS C:\Users\Administrator\PlantVision Llama Tuner> pip show triton                           
+Name: triton
+Version: 3.0.0
+Summary: A language and compiler for custom Deep Learning operations
+Home-page: https://github.com/triton-lang/triton/
+Author: Philippe Tillet
+Author-email: phil@openai.com
+License:
+Location: c:\users\administrator\plantvision llama tuner\venv\lib\site-packages
+Requires: filelock
+Required-by:
+(venv) PS C:\Users\Administrator\PlantVision Llama Tuner> 
 
 
 ## ライブラリ一覧
